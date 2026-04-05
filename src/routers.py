@@ -6,6 +6,7 @@ from typing import List
 from src.dependencies import get_db
 from src.schemas import ProductRead, ProductCreate
 from src.models import Product
+from src.services.kafka_producer import send_price_to_kafka
 from src.services.parser import fetch_price
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -32,7 +33,7 @@ async def get_products(db: AsyncSession = Depends(get_db)):
     return products
 
 @router.post("/test-parse/")
-async def test_parse_url(url: str):
+async def test_parse_url(product_id: int, url: str):
     """
     Тестовый эндпоинт для проверки работы парсера
     """
@@ -40,5 +41,9 @@ async def test_parse_url(url: str):
     if price is None:
         raise HTTPException(status_code=400, detail="Не удалось получить цену. Проверьте ссылку или селекторы")
 
-    return {"url": url, "parsed_price": price}
+    await send_price_to_kafka(product_id, price)
+
+    return {"status": "sent", "parsed_price": price}
+
+
 
