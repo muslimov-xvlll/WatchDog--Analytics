@@ -2,8 +2,9 @@ import json
 import asyncio
 import logging
 from aiokafka import AIOKafkaConsumer
+from sqlalchemy import select
 from src.database import async_session_maker
-from src.models import PriceHistory
+from src.models import PriceHistory, Product
 
 # Настраиваем логгер для этого файла
 logger = logging.getLogger(__name__)
@@ -14,8 +15,24 @@ async def save_price_to_db(product_id: int, price: float):
     async with async_session_maker() as session:
         new_price_record = PriceHistory(product_id=product_id, price=price)
         session.add(new_price_record)
+
+        # Достаем информацию о самом товаре из базы
+        result = await session.execute(select(Product).where(Product.id == product_id))
+        product = result.scalar_one_or_none()
+
+        if product:
+            # Сравниваем цены
+            if price <= product.target_price:
+                logger.warning(
+                    f"\n\nБИНГО! Товар ID={product.id} достиг цели!"
+                    f"Текущая цена: {price} <= Желаемая: {product.target_price}. Пора покупать!\n\n"
+                )
+            else:
+                logger.info(
+                    f"\n\nТовар ID={product.id}. Текущая цена {price} "
+                    f"пока выше желаемой {product.target_price}. Ждем.\n\n"
+                )
         await session.commit()
-        logger.info(f"Сохранено в БД: товар ID={product_id}, цена={price}")
 
 
 async def start_consuming():
