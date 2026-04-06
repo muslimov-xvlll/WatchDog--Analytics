@@ -5,6 +5,7 @@ from aiokafka import AIOKafkaConsumer
 from sqlalchemy import select
 from src.database import async_session_maker
 from src.models import PriceHistory, Product
+from src.services.telegram_notifier import send_telegram_message
 
 # Настраиваем логгер для этого файла
 logger = logging.getLogger(__name__)
@@ -27,6 +28,15 @@ async def save_price_to_db(product_id: int, price: float):
                     f"\n\nБИНГО! Товар ID={product.id} достиг цели!"
                     f"Текущая цена: {price} <= Желаемая: {product.target_price}. Пора покупать!\n\n"
                 )
+
+                # ФОРМИРУЕМ И ОТПРАВЛЯЕМ СООБЩЕНИЕ В ТЕЛЕГРАМ
+                msg_text = (
+                    f"🚨 <b>БИНГО! Цена упала!</b>\n\n"
+                    f"📦 Товар: ID {product.id}\n"
+                    f"💰 Текущая цена: <b>{price}</b> (цель: {product.target_price})\n\n"
+                    f"🔗 Ссылка: {product.url}"
+                )
+                await send_telegram_message(msg_text)
             else:
                 logger.info(
                     f"\n\nТовар ID={product.id}. Текущая цена {price} "

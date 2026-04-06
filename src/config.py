@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     DB_PASS: str
     DB_NAME: str
 
+    TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_CHAT_ID: str
+
     @property
     def database_url(self) -> str:
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
