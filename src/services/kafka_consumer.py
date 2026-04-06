@@ -30,7 +30,7 @@ async def save_price_to_db(product_id: int, price: float):
             else:
                 logger.info(
                     f"\n\nТовар ID={product.id}. Текущая цена {price} "
-                    f"пока выше желаемой {product.target_price}. Ждем.\n\n"
+                    f"пока выше желаемой {product.target_price}. Ждем...\n\n"
                 )
         await session.commit()
 
