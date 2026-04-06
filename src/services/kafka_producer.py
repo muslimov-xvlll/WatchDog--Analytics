@@ -5,7 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 #Настройка подключения. Позже вынесу в config.py
-KAFKA_BOOTSTRAP_SERVER = "localhost:9092"
+KAFKA_BOOTSTRAP_SERVER = "kafka:9092"
 KAFKA_TOPIC_PRICES = "product_prices"
 
 async def send_price_to_kafka(producer_id: int, price: float):

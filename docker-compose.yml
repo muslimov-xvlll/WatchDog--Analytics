@@ -31,12 +31,22 @@ services:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       # Официальный образ требует уникальный ID кластера (подойдет любая строка)
       CLUSTER_ID: "watchdog-cluster-1"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  api:
+    build: .
+    container_name: watchdog_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - kafka
+    restart: always
 
 volumes:
   pg_data:

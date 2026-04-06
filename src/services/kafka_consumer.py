@@ -38,14 +38,30 @@ async def save_price_to_db(product_id: int, price: float):
 async def start_consuming():
     consumer = AIOKafkaConsumer(
         'product_prices',
-        bootstrap_servers='localhost:9092',
+        bootstrap_servers='kafka:9092',
         # Дадим группе финальное красивое имя
         group_id="watchdog_db_writer_main",
-        # Наш исправленный десериализатор!
+        auto_offset_reset='earliest',
+        #Исправленный десериализатор
         value_deserializer=lambda m: json.loads(m.decode('utf-8'))
     )
 
-    await consumer.start()
+    # --- ДОБАВЛЯЕМ БЛОК ПОВТОРНЫХ ПОПЫТОК ---
+    connected = False
+    for i in range(6):  # Делаем 6 попыток (итого 30 секунд ожидания)
+        try:
+            logger.info(f"Попытка подключения к Kafka ({i + 1}/6)...")
+            await consumer.start()
+            connected = True
+            break  # Если подключились, выходим из цикла
+        except Exception as e:
+            logger.warning(f"Kafka еще не готова. Ждем 5 секунд... Ошибка: {e}")
+            await asyncio.sleep(5)
+
+    if not connected:
+        logger.error("КРИТИЧЕСКАЯ ОШИБКА: Не удалось подключиться к Kafka!")
+        return  # Выходим из функции, Слушатель не запустится
+    # ----------------------------------------
     logger.info("Фоновый слушатель Kafka успешно подключился и ждет сообщений...")
 
     try:
