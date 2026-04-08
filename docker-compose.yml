@@ -48,5 +48,16 @@ services:
       - kafka
     restart: always
 
+  bot:
+    build: .
+    container_name: watchdog_bot
+    # Команда, которая запустит именно файл бота, а не сервер FastAPI
+    command: python -m src.bot.main
+    depends_on:
+      - api  # Бот должен запускаться после бэкенда
+    restart: always
+    # Опционально: можно передавать токен через переменные окружения,
+    # но пока он у нас в коде, этого достаточно.
+
 volumes:
   pg_data:

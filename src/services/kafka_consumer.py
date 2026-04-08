@@ -21,7 +21,8 @@ async def save_price_to_db(product_id: int, price: float):
         result = await session.execute(select(Product).where(Product.id == product_id))
         product = result.scalar_one_or_none()
 
-        if product:
+        # Проверяем, что товар существует и активен
+        if product and product.is_active:
             # Сравниваем цены
             if price <= product.target_price:
                 logger.warning(
@@ -31,12 +32,21 @@ async def save_price_to_db(product_id: int, price: float):
 
                 # ФОРМИРУЕМ И ОТПРАВЛЯЕМ СООБЩЕНИЕ В ТЕЛЕГРАМ
                 msg_text = (
-                    f"🚨 <b>БИНГО! Цена упала!</b>\n\n"
-                    f"📦 Товар: ID {product.id}\n"
-                    f"💰 Текущая цена: <b>{price}</b> (цель: {product.target_price})\n\n"
-                    f"🔗 Ссылка: {product.url}"
+                    f"📉 <b>БИНГО! Взяли новую глубину!</b>\n\n"
+                    f"📦 Товар: <b>{product.name}</b>\n"
+                    f"💰 Текущая цена: <b>{price}</b> (ты ждал {product.target_price})\n\n"
+                    f"🔗 Скорее покупай: {product.url}\n\n"
+                    f"<i>📡 Я продолжаю следить за ним. Напишу, если цена упадет еще ниже!</i>"
                 )
-                await send_telegram_message(msg_text)
+
+                # ТЕПЕРЬ ПЕРЕДАЕМ ID ПОЛЬЗОВАТЕЛЯ ИЗ БАЗЫ
+                await send_telegram_message(user_id=product.user_telegram_id, text=msg_text)
+
+                # --- ЛОГИКА РАДАРА ---
+                # Понижаем целевую цену, чтобы не спамить
+                product.target_price = price - 1
+                logger.info(f"📡 Радар перенастроен. Новая цель для ID={product.id}: {product.target_price}")
+
             else:
                 logger.info(
                     f"\n\nТовар ID={product.id}. Текущая цена {price} "
